@@ -9,19 +9,22 @@
 */
 // Making a local '$' alias of jQuery to support jQuery.noConflict
 (function($) {
-  django.jQuery.fn.contextMenu = function ( name, actions, options ) {
+  $.fn.contextMenu = function ( name, actions, options ) {
     var me = this,
     win = $(window),
     menu = $('<ul id="'+name+'" class="context-menu"></ul>').hide().appendTo('body'),
     activeElement = null, // last clicked element that responds with contextMenu
+    originalEvent = null, // the original contextmenu event
     hideMenu = function() {
       $('.context-menu:visible').each(function() {
         $(this).trigger("closed");
         $(this).hide();
         $('body').unbind('click', hideMenu);
+        menu.unbind('closed');
       });
     },
     default_options = {
+      shiftDisable : false, // Allow access to native contextMenu by rightclick + shift
       disable_native_context_menu: false, // disables the native contextmenu everywhere you click
       leftClick: false // show menu on left mouse click instead of right
     },
@@ -48,64 +51,62 @@
       }
 
       menuItem.appendTo(menu).bind('click', function(e) {
-        itemOptions.click(activeElement);
+        itemOptions.click(activeElement, originalEvent);
         e.preventDefault();
       });
     });
 
-    // fix for ie mouse button bug
-    var mouseEvent = 'contextmenu click';
-    if ($.browser.msie && options.leftClick) {
-      mouseEvent = 'click';
-    } else if ($.browser.msie && !options.leftClick) {
-      mouseEvent = 'contextmenu';
+    if (options.leftClick) {
+      var mouseEvent = 'click';
+    } else {
+      var mouseEvent = 'contextmenu';
     }
 
     var mouseEventFunc = function(e){
+      
+      if (options.shiftDisable && e.shiftKey) {
+        return true
+      }
+      
       // Hide any existing context menus
       hideMenu();
 
-      var correctButton = ( (options.leftClick && e.button == 0) || (options.leftClick == false && e.button == 2) );
-      if ($.browser.msie) correctButton = true;
+      activeElement = $(this); // set clicked element
+      originalEvent = e; // Store the original context menu event
 
-      if( correctButton ){
-
-        activeElement = $(this); // set clicked element
-
-        if (options.showMenu) {
-          options.showMenu.call(menu, activeElement);
-        }
-
-        // Bind to the closed event if there is a hideMenu handler specified
-        if (options.hideMenu) {
-          menu.bind("closed", function() {
-            options.hideMenu.call(menu, activeElement);
-          });
-        }
-
-        menu.css({
-          visibility: 'hidden',
-          position: 'absolute',
-          zIndex: 1000
-        });
-
-        // include margin so it can be used to offset from page border.
-        var mWidth = menu.outerWidth(true),
-          mHeight = menu.outerHeight(true),
-          xPos = ((e.pageX - win.scrollLeft()) + mWidth < win.width()) ? e.pageX : e.pageX - mWidth,
-          yPos = ((e.pageY - win.scrollTop()) + mHeight < win.height()) ? e.pageY : e.pageY - mHeight;
-
-        menu.show(0, function() {
-          $('body').bind('click', hideMenu);
-        }).css({
-          visibility: 'visible',
-          top: yPos + 'px',
-          left: xPos + 'px',
-          zIndex: 1000
-        });
-
-        return false;
+      if (options.showMenu) {
+        options.showMenu.call(menu, activeElement);
       }
+
+      // Bind to the closed event if there is a hideMenu handler specified
+      if (options.hideMenu) {
+        menu.bind("closed", function() {
+          options.hideMenu.call(menu, activeElement);
+        });
+      }
+
+      menu.css({
+        visibility: 'hidden',
+        position: 'absolute',
+        zIndex: 1000
+      });
+
+      // include margin so it can be used to offset from page border.
+      var mWidth = menu.outerWidth(true),
+        mHeight = menu.outerHeight(true),
+        xPos = ((e.pageX - win.scrollLeft()) + mWidth < win.width()) ? e.pageX : e.pageX - mWidth,
+        yPos = ((e.pageY - win.scrollTop()) + mHeight < win.height()) ? e.pageY : e.pageY - mHeight;
+
+      menu.show(0, function() {
+        $('body').bind('click', hideMenu);
+      }).css({
+        visibility: 'visible',
+        top: yPos + 'px',
+        left: xPos + 'px',
+        zIndex: 1000
+      });
+
+      return false;
     }
 
     if (options.delegateEventTo) {
@@ -115,4 +116,3 @@
     }
   }
 })(django.jQuery);
-
