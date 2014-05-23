@@ -20,6 +20,7 @@ except ImportError:
     from .future import resolve_url
 import django.test
 from django.test.testcases import _AssertNumQueriesContext
+from django.contrib.auth import authenticate
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,10 @@ class TestCase(django.test.TestCase):
 
     PASSWORDS = {}
 
+    def setUp(self, *args, **kwargs):
+        super(TestCase, self).setUp(*args, **kwargs)
+        self.factory = django.test.RequestFactory()
+
     def _assertContains(self, super_method, response, text, **kwargs):
         """
         Logs content on failure and accepts case_sensitive kwarg.
@@ -123,10 +128,16 @@ class TestCase(django.test.TestCase):
         return method(identifier, password=password, **kwargs)
 
     def login(self, username):
-        """ Shortcut for logging in which asserts success """
-        self.assertTrue(
-            self.client.login(
-                username=username, password=self.PASSWORDS[username]))
+        """
+        Shortcut for logging in which asserts success and stores the
+        authenticated user as ``self.authenticated_user``.
+        """
+        kwargs = {
+            'username': username,
+            'password': self.PASSWORDS[username],
+        }
+        self.assertTrue(self.client.login(**kwargs))
+        self.authenticated_user = authenticate(**kwargs)
 
     def _test_urls(self, url_attributes):
         """ Example helper for quick/dirty URL coverage """
@@ -208,7 +219,9 @@ class TestCase(django.test.TestCase):
 
             model_admin = response.context['adminform'].model_admin
 
-            for instance in model_admin.get_queryset(response.request):
+            request = self.factory.get(add_url)
+            request.user = self.authenticated_user
+            for instance in model_admin.get_queryset(request):
                 change_url = reverse(
                     'admin:%s_%s_change' % (
                         model._meta.app_label,
