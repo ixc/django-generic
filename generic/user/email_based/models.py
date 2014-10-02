@@ -63,7 +63,7 @@ class EmailBasedUser(AbstractBaseUser, PermissionsMixin):
         return self.get_full_name()
 
     def get_full_name(self):
-        return u'{0} {1}'.format(self.first_name, self.last_name)
+        return u' '.join(filter(bool, [self.first_name, self.last_name]))
 
     def get_short_name(self):
         return self.first_name
