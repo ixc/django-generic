@@ -1,3 +1,4 @@
+import django
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
@@ -37,7 +38,10 @@ class UserChangeForm(forms.ModelForm):
 
     class Meta:
         model = get_user_model()
-        fields = '__all__'
+        # __all__ is not supported pre-1.6, and not defining fields is not
+        # supported post-1.8
+        if django.get_version() >= '1.6':
+            fields = '__all__'
 
     def clean_password(self):
         return self.initial['password']
