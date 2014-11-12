@@ -24,6 +24,7 @@ def server_error(request, template_name='500.html'):
     context = dict(settings.TEMPLATE_CONSTANTS)
     context['MEDIA_URL'] = settings.MEDIA_URL
     context['STATIC_URL'] = settings.STATIC_URL
+    context['request'] = request
     return render_to_response(template_name, context)
 
 def logout(request):
