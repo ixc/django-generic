@@ -1,8 +1,8 @@
-import django.contrib.auth.admin
+from django.contrib.auth import admin
 from django.utils.translation import ugettext_lazy as _
 from . import forms, models
 
-class UserAdmin(django.contrib.auth.admin.UserAdmin):
+class UserAdmin(admin.UserAdmin):
     form = forms.UserChangeForm
     add_form = forms.UserCreationForm
 
