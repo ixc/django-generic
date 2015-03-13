@@ -11,6 +11,7 @@ except ImportError:
     from django.contrib.auth.models import User
 else:
     User = get_user_model()
+from django.conf import settings
 from django.core import mail
 from django.core.urlresolvers import reverse
 from django.db import DEFAULT_DB_ALIAS, connections
@@ -20,9 +21,13 @@ except ImportError:
     from .future import resolve_url
 import django.test
 from django.test.testcases import _AssertNumQueriesContext
+from django.test.utils import override_settings
 from django.contrib.auth import authenticate
 
 logger = logging.getLogger(__name__)
+
+TEMPLATE_CONTEXT_PROCESSORS = set(settings.TEMPLATE_CONTEXT_PROCESSORS)
+TEMPLATE_CONTEXT_PROCESSORS.add('django.core.context_processors.request')
 
 def get_hash(string, length=8):
     """ Shortcut for generating short hash strings """
@@ -74,10 +79,6 @@ class TestCase(django.test.TestCase):
     client_class = Client
 
     PASSWORDS = {}
-
-    def setUp(self, *args, **kwargs):
-        super(TestCase, self).setUp(*args, **kwargs)
-        self.factory = django.test.RequestFactory()
 
     def _assertContains(self, super_method, response, text, **kwargs):
         """
@@ -190,6 +191,7 @@ class TestCase(django.test.TestCase):
                     'AssertionError while testing URL: {!r}'.format(url))
                 raise
 
+    @override_settings(TEMPLATE_CONTEXT_PROCESSORS=TEMPLATE_CONTEXT_PROCESSORS)
     def _test_admin(self, MODELS):
         """
         Shortcut for detecting broken admin change lists/forms.
@@ -219,9 +221,7 @@ class TestCase(django.test.TestCase):
 
             model_admin = response.context['adminform'].model_admin
 
-            request = self.factory.get(add_url)
-            request.user = self.authenticated_user
-            for instance in model_admin.get_queryset(request):
+            for instance in model_admin.get_queryset(response.context['request']):
                 change_url = reverse(
                     'admin:%s_%s_change' % (
                         model._meta.app_label,
