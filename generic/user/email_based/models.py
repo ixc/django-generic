@@ -16,7 +16,7 @@ class UserQuerySet(models.query.QuerySet):
 
 
 class EmailBasedUserManager(BaseUserManager):
-    def get_queryset(self):
+    def get_query_set(self):
         return UserQuerySet(self.model, using=self._db)
 
     def create_user(self, email, password=None, **extra_fields):
@@ -38,7 +38,7 @@ class EmailBasedUserManager(BaseUserManager):
         return user
 
     def active(self):
-        return self.get_queryset().active()
+        return self.get_query_set().active()
 
 
 class EmailBasedUser(AbstractBaseUser, PermissionsMixin):
