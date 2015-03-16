@@ -139,7 +139,7 @@ class PolymorphicAdmin(admin.ModelAdmin):
     # TODO: disable bulk deletion action when heterogeneous classes selected
     # -- collector doesn't cope, and raises AttributeErrors
 
-    def get_queryset(self, request):
+    def queryset(self, request):
         return self.model.objects.select_subclasses()
 
     def get_urls(self, *args, **kwargs):
