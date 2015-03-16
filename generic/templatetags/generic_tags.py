@@ -99,7 +99,7 @@ def _get_admin_url(obj, view='change', admin_site_name='admin'):
         '%(namespace)s:%(app)s_%(model)s_%(view)s' % {
             'namespace': admin_site_name,
             'app': obj._meta.app_label,
-            'model': obj._meta.model_name,
+            'model': obj._meta.module_name,
             'view': view}, args=(obj.pk,))
 
 @register.simple_tag
@@ -385,7 +385,7 @@ def _admin_link(tag_name, link_type, context, **kwargs):
             '%s.%s_%s' % (
                 model._meta.app_label,
                 link_type,
-                model._meta.model_name,
+                model._meta.module_name,
             )
         ):
             return ''
@@ -413,7 +413,7 @@ def _admin_link(tag_name, link_type, context, **kwargs):
             '%s:%s_%s_%s' % (
                 admin_namespace,
                 model._meta.app_label,
-                model._meta.model_name,
+                model._meta.module_name,
                 link_type,
             ),
             args=kwargs.pop('reverse_args', ()),

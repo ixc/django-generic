@@ -118,7 +118,7 @@ class BatchUpdateAdmin(admin.ModelAdmin):
         return '%s%s_%s_%s' % (
             'admin:' if include_namespace else '',
             self.model._meta.app_label,
-            self.model._meta.model_name,
+            self.model._meta.module_name,
             view_name,
         )
 
@@ -146,9 +146,9 @@ class BatchUpdateAdmin(admin.ModelAdmin):
         template_paths = map(
             lambda path: path % {
                 'app_label': self.model._meta.app_label,
-                'model_name': self.model._meta.model_name,
+                'module_name': self.model._meta.module_name,
             }, (
-                'admin/%(app_label)s/%(model_name)s/batch_update.html',
+                'admin/%(app_label)s/%(module_name)s/batch_update.html',
                 'admin/%(app_label)s/batch_update.html',
                 'admin/batch_update.html',
                 'admin/generic/batch_update.html',

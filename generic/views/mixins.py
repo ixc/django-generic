@@ -243,7 +243,7 @@ class InlineFormSetView(View):
     def get_form(self, form_class):
         self.formsets = {}
         for formset_class in self.formset_classes:
-            key = formset_class.model._meta.model_name
+            key = formset_class.model._meta.module_name
             self.formsets[key] = self.get_formset(formset_class)
         self.context_data['formsets'] = self.formsets
         return super(InlineFormSetView, self).get_form(form_class)

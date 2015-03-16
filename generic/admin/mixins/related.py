@@ -24,7 +24,7 @@ class ChangeLinkInline(admin.TabularInline):
             reverse(
                 'admin:%s_%s_change' % (
                     obj._meta.app_label,
-                    obj._meta.model_name,
+                    obj._meta.module_name,
                 ),
                 args=(obj.id,),
                 current_app=self.admin_site.name,
@@ -66,7 +66,7 @@ class ChangeFormOnlyAdmin(admin.ModelAdmin):
                 reverse(
                     'admin:%s_%s_change' % (
                         parent._meta.app_label,
-                        parent._meta.model_name,
+                        parent._meta.module_name,
                     ),
                     args=(parent.pk,),
                     current_app=self.admin_site.name

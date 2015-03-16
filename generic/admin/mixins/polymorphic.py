@@ -20,7 +20,7 @@ def get_subclass_choices(parent_model):
     return sorted(
         map(
             lambda model: (
-                model._meta.model_name,
+                model._meta.module_name,
                 title_if_lower(model._meta.verbose_name),
             ),
             filter(
@@ -151,7 +151,7 @@ class PolymorphicAdmin(admin.ModelAdmin):
         """
         urls = super(PolymorphicAdmin, self).get_urls(*args, **kwargs)
         for subclass in get_subclasses(self.model):
-            info = subclass._meta.app_label, subclass._meta.model_name
+            info = subclass._meta.app_label, subclass._meta.module_name
             urls += patterns('',
                 url(r'^(.+)/$',
                     lambda *a, **k: None, # This never gets called

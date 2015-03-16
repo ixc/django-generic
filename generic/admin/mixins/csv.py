@@ -9,7 +9,7 @@ class CSVExportAdmin(admin.ModelAdmin):
         return '%s%s_%s_%s' % (
             'admin:' if include_namespace else '',
             self.model._meta.app_label,
-            self.model._meta.model_name,
+            self.model._meta.module_name,
             view_name,
         )
 

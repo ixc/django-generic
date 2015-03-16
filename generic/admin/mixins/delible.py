@@ -19,7 +19,7 @@ class DelibleAdmin(admin.ModelAdmin):
 
     def undelete(self, request, pk):
         permission = '%s.delete_%s' % (
-            self.model._meta.app_label, self.model._meta.model_name)
+            self.model._meta.app_label, self.model._meta.module_name)
         if not request.user.has_perm(permission):
             return http.HttpResponseForbidden()
         else:
@@ -32,7 +32,7 @@ class DelibleAdmin(admin.ModelAdmin):
                 self.message_user(request, u"%s undeleted!" % obj)
             return redirect(
                 'admin:%s_%s_change' % (
-                    obj._meta.app_label, obj._meta.model_name), obj.pk)
+                    obj._meta.app_label, obj._meta.module_name), obj.pk)
 
     def get_urls(self):
         urls = super(DelibleAdmin, self).get_urls()
@@ -43,7 +43,7 @@ class DelibleAdmin(admin.ModelAdmin):
                     self.admin_site.admin_view(self.undelete),
                     name='%s_%s_undelete' % (
                         self.model._meta.app_label,
-                        self.model._meta.model_name))
+                        self.model._meta.module_name))
                 ) + urls
         return urls
 
