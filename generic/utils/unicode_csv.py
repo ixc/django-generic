@@ -34,17 +34,15 @@ class Reader:
     def __iter__(self):
         return self
 
-class Writer:
+class RowWriter(object):
     """
-    A CSV writer which will write rows to CSV file "f",
-    which is encoded in the given encoding.
+    A CSV writer that generates rows of CSV bytes in a given encoding.
     """
 
-    def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
+    def __init__(self, dialect=csv.excel, encoding="utf-8", **kwds):
         # Redirect output to a queue
         self.queue = cStringIO.StringIO()
         self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
-        self.stream = f
         self.encoder = codecs.getincrementalencoder(encoding)()
 
     def writerow(self, row):
@@ -60,19 +58,28 @@ class Writer:
             else:
                 raise NotImplementedError
             return value.encode('utf-8')
+        self.queue.truncate(0)
         self.writer.writerow(map(stringify, row))
         # Fetch UTF-8 output from the queue ...
         data = self.queue.getvalue()
         data = data.decode("utf-8")
         # ... and reencode it into the target encoding
-        data = self.encoder.encode(data)
-        # write to the target stream
-        self.stream.write(data)
-        # empty queue
-        self.queue.truncate(0)
+        return self.encoder.encode(data)
+
+
+class Writer(RowWriter):
+    """
+    A CSV writer that writes rows of CSV to file "f" in a given encoding.
+
+    """
+
+    def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
+        super(Writer, self).__init__(dialect, encoding, **kwds)
+        self.stream = f
+
+    def writerow(self, row):
+        self.stream.write(super(Writer, self).writerow(row))
 
     def writerows(self, rows):
         for row in rows:
             self.writerow(row)
-
-
