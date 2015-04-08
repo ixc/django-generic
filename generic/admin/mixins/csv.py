@@ -21,8 +21,9 @@ class CSVExportAdmin(admin.ModelAdmin):
         )
 
     def csv_export(self, request, queryset):
+        encoding = 'utf-8'
         def generate_csv():
-            writer = unicode_csv.RowWriter()
+            writer = unicode_csv.RowWriter(encoding=encoding)
             fields = self.csv_export_fields(request)
             yield writer.writerow([title for title, key in fields])
 
@@ -38,10 +39,11 @@ class CSVExportAdmin(admin.ModelAdmin):
 
         if self.csv_export_stream(request, queryset):
             logger.debug("Streaming CSV response")
-            response = http.StreamingHttpResponse(generate_csv(), mimetype='text/csv')
+            response = http.StreamingHttpResponse(generate_csv())
         else:
             logger.debug("Buffering CSV response")
-            response = http.HttpResponse(''.join(generate_csv()), mimetype='text/csv')
+            response = http.HttpResponse(''.join(generate_csv()))
+        response['Content-Type'] = 'text/csv; charset={}'.format(encoding)
         response['Content-Disposition'] = 'attachment; filename={0}'.format(
             self.csv_export_filename(request)
         )
