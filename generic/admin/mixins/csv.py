@@ -1,4 +1,5 @@
 import io
+import logging
 
 from django import http
 from django.contrib import admin
@@ -6,8 +7,12 @@ from django.template import defaultfilters
 from django.utils.translation import ugettext_lazy as _
 from ...utils import unicode_csv
 
+logger = logging.getLogger(__name__)
 
 class CSVExportAdmin(admin.ModelAdmin):
+
+    csv_export_stream_threshold = 500
+
     def _get_url_name(self, view_name, include_namespace=True):
         return '%s%s_%s_%s' % (
             'admin:' if include_namespace else '',
@@ -36,7 +41,12 @@ class CSVExportAdmin(admin.ModelAdmin):
                 writer.writerow(row)
                 yield buf.getvalue()
 
-        response = http.StreamingHttpResponse(generate_csv(), mimetype='text/csv')
+        if self.csv_export_stream(request, queryset):
+            logger.debug("Streaming CSV response")
+            response = http.StreamingHttpResponse(generate_csv(), mimetype='text/csv')
+        else:
+            logger.debug("Buffering CSV response")
+            response = http.HttpResponse(''.join(generate_csv()), mimetype='text/csv')
         response['Content-Disposition'] = 'attachment; filename={0}'.format(
             self.csv_export_filename(request)
         )
@@ -55,6 +65,9 @@ class CSVExportAdmin(admin.ModelAdmin):
 
     def csv_export_enabled(self, request):
         return bool(self.csv_export_fields(request))
+
+    def csv_export_stream(self, request, queryset):
+        return queryset.count() >= self.csv_export_stream_threshold
 
     def csv_export_fields(self, request):
         """
