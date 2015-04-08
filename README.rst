@@ -6,3 +6,18 @@ in most projects, that do not already exist in other apps.
 
 Also note that things might be taken out of this package at some stage if they
 find a better home.
+
+Running tests
+-------------
+
+Create a virtual envrionment and install the project with test support
+using pip:
+
+    virtualenv venv
+    source venv/bin/activate
+    pip install -e .[test]
+
+Then run the tests from the project root directory:
+
+    cd test_site
+    ./manage.py test

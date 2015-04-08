@@ -1,5 +1,12 @@
 import setuptools
 
+tests_require=[
+    'webtest',
+    'django>=1.6,<1.7a',
+    'django-webtest',
+    'django-dynamic-fixture',
+]
+
 setuptools.setup(
     name='django-generic',
     version='0.1',
@@ -15,5 +22,12 @@ setuptools.setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Framework :: Django',],
-    install_requires=[],
-    include_package_data=True)
+    include_package_data=True,
+    install_requires=[
+        'django>=1.6',
+    ],
+    tests_require=tests_require, # `setuptools test`
+    extras_require={
+        "test": tests_require # `pip install -e .[test]`
+    },
+)
