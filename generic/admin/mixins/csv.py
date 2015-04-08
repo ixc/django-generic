@@ -1,4 +1,3 @@
-import io
 import logging
 
 from django import http
@@ -23,23 +22,19 @@ class CSVExportAdmin(admin.ModelAdmin):
 
     def csv_export(self, request, queryset):
         def generate_csv():
-            buf = io.BytesIO()
-            writer = unicode_csv.Writer(buf)
+            writer = unicode_csv.RowWriter()
             fields = self.csv_export_fields(request)
-            writer.writerow([title for title, key in fields])
-            yield buf.getvalue()
+            yield writer.writerow([title for title, key in fields])
 
             # TODO: detect absence of callables and use efficient .values query
             for obj in queryset:
-                buf.truncate(0)
                 row = []
                 for title, key in fields:
                     if callable(key):
                         row.append(key(obj))
                     else:
                         row.append(getattr(obj, key))
-                writer.writerow(row)
-                yield buf.getvalue()
+                yield writer.writerow(row)
 
         if self.csv_export_stream(request, queryset):
             logger.debug("Streaming CSV response")
