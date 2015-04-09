@@ -44,19 +44,19 @@ class BaseCookedIdAdmin:
         """
         view_url = ''
         edit_url = ''
-        
+
         if hasattr(obj, 'get_absolute_url'):
             view_url = obj.get_absolute_url();
         if request.user.has_perm('%s.change_%s' %(obj._meta.app_label, obj._meta.module_name)):
 			edit_url = reverse('admin:%s_%s_change' %(obj._meta.app_label,  obj._meta.module_name),  args=[obj.id])
-		
+
         result = {'text': unicode(obj),
                   'view_url': view_url,
                   'edit_url': edit_url
                   }
         return result
 
-    def cook_ids(self, request, field_name, raw_ids):
+    def cook_ids(self, request, pk, field_name, raw_ids):
         # TODO: extend to support non-integer/non-`id` PKs
         if not field_name in self.cooked_id_fields:
             raise http.Http404
@@ -102,7 +102,7 @@ class BaseCookedIdAdmin:
 class CookedIdAdmin(BaseCookedIdAdmin, admin.ModelAdmin):
 
     def cook_ids_inline(self, request, model_name, field_name, raw_ids):
-        
+
         # find the correct inline instance and pass control to it's own cook_ids()
         inlines = self.get_inline_instances(request)
         for inline in inlines:
@@ -117,7 +117,7 @@ class CookedIdAdmin(BaseCookedIdAdmin, admin.ModelAdmin):
 
         urlpatterns = patterns(
             '',
-            url(r'^cook-ids/(?P<field_name>\w+)/(?P<raw_ids>[\d,]+)/$',
+            url(r'^(?P<pk>.+)/cook-ids/(?P<field_name>\w+)/(?P<raw_ids>[\d,]+)/$',
                 self.admin_site.admin_view(self.cook_ids))
         )
 
