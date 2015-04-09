@@ -18,7 +18,7 @@
                 var field_name = $(field).attr('name');
                 var ids = escape($(field).val());
                 if (ids){
-                    var url_base = window.cooked_id_url_base || '../';
+                    var url_base = window.cooked_id_url_base || './';
                     var cook_url = "";
                     if (is_inline_field) {
                         var model_name = $(field).attr('data-model');
@@ -49,17 +49,17 @@
                                     ' title="remove">&nbsp;</a>'
                                 ).appendTo(cooked);
                             }
-                            
+
                             if(data['can_view'] || data['can_edit']) {
                                 var options = {};
                                 if(data['can_view'])
                                 {
-                                    options['View'] = {click: function(element) {  
+                                    options['View'] = {click: function(element) {
                                         window.location.href = data['can_view'];
                                     }}
                                 }
                                 if(data['can_edit']) {
-                                    options['Edit'] = {click: function(element) {  
+                                    options['Edit'] = {click: function(element) {
                                         window.location.href = data['base_url'] + key + '/';
                                     }}
                                 }
