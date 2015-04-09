@@ -68,14 +68,45 @@ class CSVExportAdmin(admin.ModelAdmin):
 
     def csv_export_fields(self, request):
         """
-        This returns a list of two-tuples describing the fields to export.
+        Returns a list of two-tuples describing the fields to export.
+
         The first element of each tuple is the label for the column.
         The second element is a field name or callable which will return the
         appropriate value for the field given a model instance.
+
+        By default, uses get_list_display() to determine the fields to
+        include, so that the CSV file contains the data shown in the
+        admin change list.
+
         """
         fields = []
-        for field in self.model._meta.fields:
-            fields.append((field.verbose_name, field.name))
+
+        def callable_label(callible):
+            if hasattr(field, 'short_description'):
+                label = field.short_description
+            else:
+                label = field.__name__
+
+        for column in self.get_list_display(request):
+            label = str(column)
+            field = column
+            if isinstance(column, basestring):
+                # is it a field of the model?
+                if column in self.model._meta.fields:
+                    label = self.model._meta.fields[column].verbose_name
+                # is it an attribute of this admin view?
+                elif hasattr(self, column):
+                    field = getattr(self, column)
+                    label = callable_label(field)
+                # is it an attribute of the model?
+                elif hasattr(self.model, column):
+                    field = getattr(self, self.model)
+                    # keep the name as the label
+
+            elif isinstance(field, callable):
+                label = callable_label(field)
+
+            fields.append((label, field))
         return fields
 
     def csv_export_filename(self, request):
