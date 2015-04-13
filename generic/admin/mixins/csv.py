@@ -82,31 +82,35 @@ class CSVExportAdmin(admin.ModelAdmin):
         fields = []
 
         def callable_label(callible):
-            if hasattr(field, 'short_description'):
-                label = field.short_description
-            else:
-                label = field.__name__
+            return (
+                field.short_description
+                if hasattr(field, 'short_description')
+                else field.__name__
+            )
 
         for column in self.get_list_display(request):
             label = str(column)
             field = column
+
             if isinstance(column, basestring):
                 # is it a field of the model?
                 if column in self.model._meta.fields:
                     label = self.model._meta.fields[column].verbose_name
+                # is it an attribute of the model?
+                elif hasattr(self.model, column):
+                    field = getattr(self.model, column)
+                    if column == '__str__':
+                        label = str(self.model._meta.verbose_name)
                 # is it an attribute of this admin view?
                 elif hasattr(self, column):
                     field = getattr(self, column)
                     label = callable_label(field)
-                # is it an attribute of the model?
-                elif hasattr(self.model, column):
-                    field = getattr(self, self.model)
-                    # keep the name as the label
 
             elif isinstance(field, callable):
                 label = callable_label(field)
 
             fields.append((label, field))
+
         return fields
 
     def csv_export_filename(self, request):

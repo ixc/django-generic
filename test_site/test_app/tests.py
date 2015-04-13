@@ -57,7 +57,6 @@ class CSVExportAdminTestCase(WebTest):
         login_form['password'] = self.password
         self.login_response = login_form.submit().follow()
 
-        self.test_header = 'ID,field one,field two\r\n'
         self.test_url = urlresolvers.reverse('admin:test_app_csvtest_changelist')
         self.fixtures = [ G(models.CsvTest) ]
 
@@ -89,8 +88,8 @@ class CSVExportAdminTestCase(WebTest):
         self.assertEqual(200, response.status_code)
         self.assertCsvRows(
             response,
-            self.test_header,
-            '{0.id},{0.field_one},{0.field_two}\r\n'.format(self.fixtures[0])
+            'csv test\r\n',
+            'CsvTest object\r\n'
         )
 
     def assertCsvRows(self, response, *rows):
