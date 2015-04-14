@@ -10,7 +10,7 @@ class CSVExportAdmin(admin.ModelAdmin):
     Use generic.admin.actions.csv.CSVExportAction instead.
     """
 
-    csv_export = csv.CSVExportAction()
+    _csv_export = csv.CSVExportAction()
 
     def get_actions(self, request):
         actions = super(CSVExportAdmin, self).get_actions(request)
@@ -23,4 +23,19 @@ class CSVExportAdmin(admin.ModelAdmin):
         return actions
 
     def csv_export_enabled(self, request):
-        return bool(self.csv_export.csv_export_fields(self, request))
+        return bool(self.csv_export_fields(request))
+
+    # Backwards compat methods for model admin classes that have
+    # overridden them.
+
+    def csv_export(self, request, queryset):
+        return self._csv_export(self, request, queryset)
+
+    def csv_export_stream(self, request, queryset):
+        return self._csv_export.csv_export_stream(self, request, queryset)
+
+    def csv_export_fields(self, request):
+        return self._csv_export.csv_export_fields(self, request)
+
+    def csv_export_filename(self, request):
+        return self._csv_export.csv_export_filename(self, request)
