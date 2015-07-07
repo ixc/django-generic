@@ -3,7 +3,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
-
+from django.forms.widgets import Media, MEDIA_TYPES
 from django.core.urlresolvers import reverse
 from ..widgets import (
     ForeignKeyCookedIdWidget,
@@ -211,3 +211,58 @@ class StackedInlineCookedIdAdmin(BaseCookedIdAdmin, admin.StackedInline):
                     })
         return super(StackedInlineCookedIdAdmin, self).formfield_for_foreignkey(
             db_field, request=request, **kwargs)
+
+
+class MediaWithInlineJS(Media):
+    """
+    Used internally by CookedSingletonFix, a helper class that adds inline JS
+    functionality to django's internal Media objects, which otherwise only
+    support lists of URLs for JS and CSS files.
+    
+    Note that the inline JS functionality will be lost if a MediaWithInlineJS
+    object is on the right-hand side of an addition with a normal Media object.
+    """
+    def __init__(self, *args, **kwargs):
+        self.inline_js = kwargs.pop('inline_js', '')
+        super(MediaWithInlineJS, self).__init__(*args, **kwargs)
+    
+    def render_js(self):
+        return super(MediaWithInlineJS, self).render_js() + [self.inline_js]
+    
+    def __add__(self, other):
+        combined = MediaWithInlineJS(inline_js=self.inline_js)
+        for name in MEDIA_TYPES:
+            getattr(combined, 'add_' + name)(getattr(self, '_' + name, None))
+            getattr(combined, 'add_' + name)(getattr(other, '_' + name, None))
+        return combined
+
+class CookedSingletonFix(object):
+    """
+    A ModelAdmin mixin for singleton objects (provided by the django-singleton
+    library) that use cooked IDs. Place before SingletonAdmin and CookiedIdAdmin
+    in the inheritance list.
+    
+    Cooked IDs will not work on singleton models without this fix due to the
+    way the JS constructs the URL for the "cook" requests. Singleton models
+    don't have a PK in their admin URLs, which is the root of the issue.
+    
+    This fix adds inline JS via the ModelAdmin.Media mechanic to set the 
+    "window.cooked_id_url_base" JS variable, so that working URLs can be
+    constructed. The fix is generic enough to work with non-singleton models
+    as well, but is provided as an explicit mix-in due to its reliance on
+    the addition order of Media objects in the ModelAdmin internals, which is
+    subject to sudden and confusing breakage.
+    """
+    
+    @property
+    def media(self):
+        # Because singleton models don't have a PK section in their URL,
+        # using './' doesn't work, but instead of faking a PK, the add
+        # URL should be a cleaner approach
+        base_url = reverse('admin:%s_%s_add' % (
+            self.model._meta.app_label, self.model._meta.module_name)
+        )
+        extra_script = '<script type="text/javascript">'\
+            'window.cooked_id_url_base="%s";</script>' % base_url
+        return MediaWithInlineJS(inline_js=extra_script) \
+            + super(CookedSingletonFix, self).media
