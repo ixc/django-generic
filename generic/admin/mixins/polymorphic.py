@@ -94,10 +94,12 @@ class PolymorphicAdmin(admin.ModelAdmin):
 
     def get_form(self, request, obj=None, **kwargs):
         model_admin = self.get_modeladmin(request, obj)
-        form_class = model_admin.get_form(request, obj=obj, **kwargs)
         if not self.get_model(request, obj):
+            # Not passing fields=None as kwargs here breaks Django 1.6
+            form_class = model_admin.get_form(request, obj=obj, fields=None, **kwargs)
             return self._build_subclass_selection_form(form_class)
         else:
+            form_class = model_admin.get_form(request, obj=obj, **kwargs)
             return form_class
 
     def get_model(self, request, obj=None):
