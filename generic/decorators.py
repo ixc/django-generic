@@ -111,5 +111,5 @@ def json_view(view):
         except TypeError:
             json_data = json.dumps(
                 {'result': False, 'reason': 'Error encoding JSON response'})
-        return HttpResponse(json_data, mimetype='application/json')
+        return HttpResponse(json_data, content_type='application/json')
     return wrapped_view

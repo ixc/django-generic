@@ -14,7 +14,7 @@ class CSVExportAdmin(admin.ModelAdmin):
         )
 
     def csv_export(self, request, queryset):
-        response = http.HttpResponse(mimetype='text/csv')
+        response = http.HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename={0}'.format(
             self.csv_export_filename(request)
         )

@@ -80,7 +80,7 @@ class BaseCookedIdAdmin:
         else:
             pass # graceful-ish.
         return http.HttpResponse(
-            json.dumps(response_data), mimetype='application/json')
+            json.dumps(response_data), content_type='application/json')
 
     def assert_cooked_target_admin(self, db_field):
         if db_field.rel.to in self.admin_site._registry:

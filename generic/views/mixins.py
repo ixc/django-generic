@@ -40,7 +40,7 @@ class View(django.views.generic.View):
                             'result': self.result_text,
                         }
                     ),
-                    mimetype="application/json"
+                    content_type="application/json"
                 )
         return response
 
