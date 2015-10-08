@@ -101,7 +101,7 @@ class BaseCookedIdAdmin:
 
 class CookedIdAdmin(BaseCookedIdAdmin, admin.ModelAdmin):
 
-    def cook_ids_inline(self, request, model_name, field_name, raw_ids):
+    def cook_ids_inline(self, request, pk, model_name, field_name, raw_ids):
 
         # find the correct inline instance and pass control to it's own cook_ids()
         inlines = self.get_inline_instances(request)
@@ -109,7 +109,7 @@ class CookedIdAdmin(BaseCookedIdAdmin, admin.ModelAdmin):
             content_type = ContentType.objects.get_for_model(inline.model)
             if model_name == content_type.model and field_name in inline.cooked_id_fields:
                 # this is our guy
-                return inline.cook_ids(request, field_name, raw_ids)
+                return inline.cook_ids(request, pk, field_name, raw_ids)
 
         raise http.Http404
 
@@ -129,7 +129,7 @@ class CookedIdAdmin(BaseCookedIdAdmin, admin.ModelAdmin):
                     content_type = ContentType.objects.get_for_model(inline.model)
                     urlpatterns += patterns(
                         '',
-                        url(r'^cook-ids-inline/(?P<model_name>'+content_type.model+')/(?P<field_name>\w+)/(?P<raw_ids>[\d,]+)/$',
+                        url(r'^(?P<pk>.+)/cook-ids-inline/(?P<model_name>'+content_type.model+')/(?P<field_name>\w+)/(?P<raw_ids>[\d,]+)/$',
                             self.admin_site.admin_view(self.cook_ids_inline))
                     )
             except AttributeError:
