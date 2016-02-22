@@ -273,7 +273,11 @@ class _VerboseAssertNumQueriesContext(_AssertNumQueriesContext):
             super(_VerboseAssertNumQueriesContext, self).__exit__(
                 exc_type, exc_value, traceback)
         except AssertionError, e:
-            queries = self.connection.queries[self.starting_queries:]
+            start = getattr(
+                self, 'initial_queries', getattr(self, 'starting_queries', 0)
+            )
+            # see django 952ba5237ea62e7647cdd5214b1df79c0e7cea38
+            queries = self.connection.queries[start:]
             logger.warning(
                 '\n    '.join(
                     ['Unexpected queries (%s):' % e] +

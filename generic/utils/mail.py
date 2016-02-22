@@ -6,6 +6,7 @@ from django.core import mail
 from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.test import RequestFactory
+from ..templatetags.generic_tags import html_to_text
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +97,8 @@ class TemplateEmail(mail.EmailMultiAlternatives):
             html = self.render_html()
             if html.strip():
                 self.attach_alternative(html, 'text/html')
+                if not self.body.strip():
+                    self.body = html_to_text(html)
 
     def _get_context(self, base_template):
         if self.process_context:

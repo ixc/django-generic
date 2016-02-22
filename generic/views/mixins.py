@@ -8,6 +8,7 @@ try:
     from django.shortcuts import resolve_url
 except ImportError:
     from generic.utils.future import resolve_url
+from django.utils.http import urlquote
 from django.utils.decorators import method_decorator
 
 from .exceptions import RedirectInstead
@@ -325,7 +326,9 @@ class HashedURLView(django.views.generic.View):
     def dispatch(self, request, *args, **kwargs):
         provided_hash = kwargs.get(self.hash_parameter)
         expected_hash = self.hash_path(
-            ''.join(request.path_info.rsplit(provided_hash, 1)) # replace last
+            ''.join(
+                urlquote(request.path).rsplit(provided_hash, 1) # replace last
+            )
         )
         if provided_hash != expected_hash:
             return http.HttpResponseForbidden('Invalid hash')
