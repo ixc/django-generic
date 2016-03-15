@@ -30,7 +30,7 @@ class UserCreationForm(forms.ModelForm):
 
 class UserChangeForm(forms.ModelForm):
     password = ReadOnlyPasswordHashField(
-	label= ("Password"),
+        label= ("Password"),
         help_text= ("Raw passwords are not stored, so there is no way to see "
                     "this user's password, but you can change the password "
                     "using <a href=\"password/\">this form</a>."),
@@ -40,8 +40,7 @@ class UserChangeForm(forms.ModelForm):
         model = get_user_model()
         # __all__ is not supported pre-1.6, and not defining fields is not
         # supported post-1.8
-        if django.get_version() >= '1.6':
-            fields = '__all__'
+        fields = '__all__' if django.VERSION >= (1,6) else None
 
     def clean_password(self):
         return self.initial['password']

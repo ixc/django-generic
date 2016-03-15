@@ -1,3 +1,5 @@
+import django
+
 from django import http
 from django.conf import settings
 from django.contrib import admin
@@ -47,8 +49,9 @@ class BaseCookedIdAdmin:
 
         if hasattr(obj, 'get_absolute_url'):
             view_url = obj.get_absolute_url();
-        if request.user.has_perm('%s.change_%s' %(obj._meta.app_label, obj._meta.module_name)):
-			edit_url = reverse('admin:%s_%s_change' %(obj._meta.app_label,  obj._meta.module_name),  args=[obj.id])
+
+        if request.user.has_perm('%s.change_%s' % (obj._meta.app_label, obj._meta.module_name)):
+            edit_url = reverse('admin:%s_%s_change' % (obj._meta.app_label,  obj._meta.module_name),  args=[obj.id])
 
         result = {'text': unicode(obj),
                   'view_url': view_url,
@@ -74,13 +77,19 @@ class BaseCookedIdAdmin:
                 target_model_admin and
                 target_model_admin.has_change_permission(request)
         ):
-            for obj in target_model_admin.queryset(request).filter(id__in=ids):
+            for obj in target_model_admin.get_queryset(request).filter(id__in=ids):
                 response_data[obj.pk] = self.cook(
                     obj, request=request, field_name=field_name)
         else:
             pass # graceful-ish.
+
+        content_type_kwarg = (
+            'content_type' if django.VERSION >= (1,7) else 'mimetype'
+        )
         return http.HttpResponse(
-            json.dumps(response_data), content_type='application/json')
+            json.dumps(response_data),
+            **{content_type_kwarg: 'application/json'}
+        )
 
     def assert_cooked_target_admin(self, db_field):
         if db_field.rel.to in self.admin_site._registry:
