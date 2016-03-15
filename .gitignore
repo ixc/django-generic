@@ -3,6 +3,7 @@
 
 .DS_Store
 .eggs/
+dist/
 pip-log.txt
 *.egg-info
 
