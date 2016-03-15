@@ -5,7 +5,12 @@ except ImportError:
 
 from functools import wraps
 from django.conf import settings
-from django.core.cache import cache, get_cache
+try:
+    from django.core.cache import cache, get_cache
+except ImportError:
+    from django.core.cache import cache, caches
+    def get_cache(name):
+        return caches[name]
 from django.http import HttpResponse
 
 import logging

@@ -2,7 +2,13 @@ from django import forms
 from django import http
 from django.contrib import admin
 from django.contrib.admin.filters import SimpleListFilter
-from django.db.models import loading
+try:
+    from django.apps import apps
+    get_model = apps.get_model
+    get_models = apps.get_models
+except ImportError:
+    from django.db.models.loading import get_model, get_models
+from django.apps import apps
 from django.utils.translation import ugettext_lazy as _
 
 try:
@@ -28,7 +34,7 @@ def get_subclass_choices(parent_model):
                     issubclass(model, parent_model) and
                     parent_model in model._meta.parents
                 ),
-                loading.get_models()
+                get_models()
             )
         )
     )
