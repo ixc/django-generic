@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name='django-generic',
-    version='0.1',
+    use_scm_version={'version_scheme': 'post-release'},
     description='Generic Django Utilities',
     author='Simon Meers',
     author_email='simon@simonmeers.com',
@@ -16,4 +16,5 @@ setuptools.setup(
         'Programming Language :: Python',
         'Framework :: Django',],
     install_requires=[],
+    setup_requires=['setuptools_scm'],
     include_package_data=True)
