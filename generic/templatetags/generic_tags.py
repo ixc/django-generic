@@ -491,15 +491,16 @@ def add_link(context, model_string, **kwargs):
 
 @register.simple_tag(takes_context=True)
 def change_link(context, obj, **kwargs):
-    defaults = {
-        'link_text': 'Edit this <verbose_name>',
-        'model': obj.__class__,
-        'reverse_args': (obj.pk,),
-        'instance': obj,
-    }
-    defaults.update(**kwargs)
-    return _admin_link('change_link', 'change', context, **defaults)
-
+    if hasattr(obj, 'pk'):
+        defaults = {
+            'link_text': 'Edit this <verbose_name>',
+            'model': obj.__class__,
+            'reverse_args': (obj.pk,),
+            'instance': obj,
+        }
+        defaults.update(**kwargs)
+        return _admin_link('change_link', 'change', context, **defaults)
+    return None
 
 @register.assignment_tag(takes_context=True)
 def get_add_link(context, model_string, **kwargs):
