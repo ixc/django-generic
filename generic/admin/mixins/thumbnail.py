@@ -33,7 +33,13 @@ class ThumbnailAdminMixin(object):
             from easy_thumbnails.files import get_thumbnailer
             thumbnailer = get_thumbnailer(source)
             try:
-                thumbnail = thumbnailer.get_thumbnail(self.thumbnail_options)
+                try:
+                    # Is thumbnail_options an alias?
+                    thumbnail = thumbnailer[self.thumbnail_options]
+                except KeyError:
+                    # Nope! Must be an options dict.
+                    thumbnail = thumbnailer.get_thumbnail(
+                        self.thumbnail_options)
             except Exception:
                 return ''
             return '<img class="thumbnail" src="{0}" />'.format(thumbnail.url)
