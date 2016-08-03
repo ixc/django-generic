@@ -8,7 +8,6 @@ try:
     get_models = apps.get_models
 except ImportError:
     from django.db.models.loading import get_model, get_models
-from django.apps import apps
 from django.utils.translation import ugettext_lazy as _
 
 try:
