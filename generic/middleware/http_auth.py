@@ -9,8 +9,12 @@ from django.contrib.auth import authenticate
 
 class HttpAuthMiddleware(object):
     """ Authenticate all requests """
-    def process_request(self, request):
-        return _http_auth_helper(request)
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        return _http_auth_helper(request) or response
 
 
 def default_auth_function(request, username, password):
@@ -45,11 +49,11 @@ def _http_auth_helper(request):
     if exemption_callable and exemption_callable(request):
         return None
 
-    if request.META.has_key('HTTP_AUTHORIZATION'):
+    if 'HTTP_AUTHORIZATION' in request.META:
         auth = request.META['HTTP_AUTHORIZATION'].split()
         if len(auth) == 2:
             if auth[0].lower() == 'basic':
-                username, password = base64.b64decode(auth[1]).split(':')
+                username, password = base64.b64decode(auth[1]).decode().split(':')
                 auth_function = getattr(
                     settings, 'HTTP_AUTH_FUNCTION', default_auth_function)
                 if auth_function(request, username, password):

@@ -4,8 +4,14 @@ except ImportError:
     from django.utils import simplejson as json
 
 from functools import wraps
+import django
 from django.conf import settings
-from django.core.cache import cache, get_cache
+try:
+    from django.core.cache import cache, get_cache
+except ImportError:
+    from django.core.cache import cache, caches
+    def get_cache(name):
+        return caches[name]
 from django.http import HttpResponse
 
 import logging
@@ -28,11 +34,11 @@ def cache_method(cache_name=None):
             )
             for value in args:
                 if isinstance(value, (list, tuple)):
-                    value = ','.join(map(unicode, value))
+                    value = ','.join(map(str, value))
                 cache_key += '-%s' % value
             for key, value in kwargs.iteritems():
                 if isinstance(value, (list, tuple)):
-                    value = ','.join(map(unicode, value))
+                    value = ','.join(map(str, value))
                 cache_key += '-%s=%s' % (key, value)
             debug_info = [cache_key]
 
@@ -111,5 +117,11 @@ def json_view(view):
         except TypeError:
             json_data = json.dumps(
                 {'result': False, 'reason': 'Error encoding JSON response'})
-        return HttpResponse(json_data, mimetype='application/json')
+        content_type_kwarg = (
+            'content_type' if django.VERSION >= (1,7) else 'mimetype'
+        )
+        return HttpResponse(
+            json_data,
+            **{content_type_kwarg: 'application/json'}
+        )
     return wrapped_view

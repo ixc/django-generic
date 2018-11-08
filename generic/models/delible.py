@@ -31,7 +31,12 @@ class Delible(models.Model):
     """
     deleted = models.DateTimeField(null=True, editable=False)
     deleted_by = models.ForeignKey(
-        user_model, null=True, related_name='+', editable=False)
+        user_model,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='+',
+        editable=False,
+    )
 
     is_delible = True
 

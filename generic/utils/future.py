@@ -1,4 +1,4 @@
-from django.core import urlresolvers
+from django import urls
 
 def resolve_url(to, *args, **kwargs):
     """
@@ -8,7 +8,7 @@ def resolve_url(to, *args, **kwargs):
 
         * A model: the model's `get_absolute_url()` function will be called.
 
-        * A view name, possibly with arguments: `urlresolvers.reverse()` will
+        * A view name, possibly with arguments: `urls.reverse()` will
           be used to reverse-resolve the name.
 
         * A URL, which will be returned as-is.
@@ -20,8 +20,8 @@ def resolve_url(to, *args, **kwargs):
 
     # Next try a reverse URL resolution.
     try:
-        return urlresolvers.reverse(to, args=args, kwargs=kwargs)
-    except urlresolvers.NoReverseMatch:
+        return urls.reverse(to, args=args, kwargs=kwargs)
+    except urls.NoReverseMatch:
         # If this is a callable, re-raise.
         if callable(to):
             raise

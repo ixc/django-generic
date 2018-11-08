@@ -1,4 +1,5 @@
 import json
+import django
 import django.views.generic
 
 from django import http
@@ -8,6 +9,7 @@ try:
     from django.shortcuts import resolve_url
 except ImportError:
     from generic.utils.future import resolve_url
+from django.utils.http import urlquote
 from django.utils.decorators import method_decorator
 
 from .exceptions import RedirectInstead
@@ -33,6 +35,9 @@ class View(django.views.generic.View):
         """ Hook for any last-minute response tweaking; e.g. JSON for AJAX """
         if self.request.is_ajax() and response.status_code == 302:
             if self.ajax_catch_redirects:
+                content_type_kwarg = (
+                    'content_type' if django.VERSION >= (1,7) else 'mimetype'
+                )
                 return http.HttpResponse(
                     json.dumps(
                         {
@@ -40,7 +45,7 @@ class View(django.views.generic.View):
                             'result': self.result_text,
                         }
                     ),
-                    mimetype="application/json"
+                    **{content_type_kwarg: 'application/json'}
                 )
         return response
 
@@ -325,7 +330,9 @@ class HashedURLView(django.views.generic.View):
     def dispatch(self, request, *args, **kwargs):
         provided_hash = kwargs.get(self.hash_parameter)
         expected_hash = self.hash_path(
-            ''.join(request.path_info.rsplit(provided_hash, 1)) # replace last
+            ''.join(
+                urlquote(request.path).rsplit(provided_hash, 1) # replace last
+            )
         )
         if provided_hash != expected_hash:
             return http.HttpResponseForbidden('Invalid hash')

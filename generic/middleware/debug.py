@@ -1,9 +1,8 @@
 import sys
 import os
 import re
-import hotshot, hotshot.stats
 import tempfile
-import StringIO
+from io import BytesIO
 
 from django.conf import settings
 
@@ -18,9 +17,9 @@ class ConsoleExceptionMiddleware:
         if settings.DEBUG:
             import traceback
             exc_info = sys.exc_info()
-            print "######################## Exception #############################"
-            print '\n'.join(traceback.format_exception(*(exc_info or sys.exc_info())))
-            print "################################################################"
+            print("######################## Exception #############################")
+            print('\n'.join(traceback.format_exception(*(exc_info or sys.exc_info()))))
+            print("################################################################")
         return None
 
 class ProfileMiddleware(object):
@@ -45,6 +44,7 @@ class ProfileMiddleware(object):
     ]
 
     def process_request(self, request):
+        import hotshot
         if (settings.DEBUG or request.user.is_superuser) and 'prof' in request.GET:
             self.tmpfile = tempfile.mktemp()
             self.prof = hotshot.Profile(self.tmpfile)
@@ -100,10 +100,11 @@ class ProfileMiddleware(object):
                "</pre>"
 
     def process_response(self, request, response):
+        import hotshot.stats
         if (settings.DEBUG or request.user.is_superuser) and 'prof' in request.GET:
             self.prof.close()
 
-            out = StringIO.StringIO()
+            out = BytesIO()
             old_stdout = sys.stdout
             sys.stdout = out
 

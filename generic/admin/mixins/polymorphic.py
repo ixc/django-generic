@@ -2,15 +2,16 @@ from django import forms
 from django import http
 from django.contrib import admin
 from django.contrib.admin.filters import SimpleListFilter
-from django.db.models import loading
+try:
+    from django.apps import apps
+    get_model = apps.get_model
+    get_models = apps.get_models
+except ImportError:
+    from django.db.models.loading import get_model, get_models
+from django.apps import apps
 from django.utils.translation import ugettext_lazy as _
 
-try:
-    # Prevent deprecation warnings on Django >= 1.4
-    from django.conf.urls import patterns, url
-except ImportError:
-    # For compatibility with Django <= 1.3
-    from django.conf.urls.defaults import patterns, url
+from django.conf.urls import url
 
 from ...utils.inheritance import get_subclasses
 
@@ -20,7 +21,7 @@ def get_subclass_choices(parent_model):
     return sorted(
         map(
             lambda model: (
-                model._meta.module_name,
+                model._meta.model_name,
                 title_if_lower(model._meta.verbose_name),
             ),
             filter(
@@ -28,7 +29,7 @@ def get_subclass_choices(parent_model):
                     issubclass(model, parent_model) and
                     parent_model in model._meta.parents
                 ),
-                loading.get_models()
+                get_models()
             )
         )
     )
@@ -139,7 +140,7 @@ class PolymorphicAdmin(admin.ModelAdmin):
     # TODO: disable bulk deletion action when heterogeneous classes selected
     # -- collector doesn't cope, and raises AttributeErrors
 
-    def queryset(self, request):
+    def get_queryset(self, request):
         return self.model.objects.select_subclasses()
 
     def get_urls(self, *args, **kwargs):
@@ -151,10 +152,10 @@ class PolymorphicAdmin(admin.ModelAdmin):
         """
         urls = super(PolymorphicAdmin, self).get_urls(*args, **kwargs)
         for subclass in get_subclasses(self.model):
-            info = subclass._meta.app_label, subclass._meta.module_name
-            urls += patterns('',
+            info = subclass._meta.app_label, subclass._meta.model_name
+            urls += [
                 url(r'^(.+)/$',
                     lambda *a, **k: None, # This never gets called
                     name='%s_%s_change' % info),
-            )
+            ]
         return urls

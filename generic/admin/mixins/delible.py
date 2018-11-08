@@ -1,9 +1,6 @@
 from django import http
 from django.contrib import admin
-try:
-    from django.conf.urls import patterns, url
-except ImportError:
-    from django.conf.urls.defaults import patterns, url
+from django.conf.urls import url
 from django.shortcuts import get_object_or_404, redirect
 
 from ...models.delible import Delible
@@ -37,13 +34,14 @@ class DelibleAdmin(admin.ModelAdmin):
     def get_urls(self):
         urls = super(DelibleAdmin, self).get_urls()
         if issubclass(self.model, Delible):
-            urls = patterns(
-                '', url(
+            urls = [
+                url(
                     r'^(?P<pk>.+)/undelete/$',
                     self.admin_site.admin_view(self.undelete),
                     name='%s_%s_undelete' % (
                         self.model._meta.app_label,
-                        self.model._meta.module_name))
-                ) + urls
+                        self.model._meta.model_name)
+                )
+            ] + urls
         return urls
 

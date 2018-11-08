@@ -62,5 +62,5 @@ def relative_view_on_site(request, content_type_id, object_id):
 
 relative_view_on_site_urls = url(
     r'^admin/r/(?P<content_type_id>\d+)/(?P<object_id>.+)/$',
-    'generic.views.relative_view_on_site',
+    relative_view_on_site,
 )

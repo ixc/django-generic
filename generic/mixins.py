@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.encoding import force_text
 
 class Inheritable(object):
     def get_leaf_object(self):
@@ -12,16 +13,16 @@ class Inheritable(object):
                     pass
         return self
 
-    def __unicode__(self):
+    def __str__(self):
         # Display the unicode representation of the leaf model instance
         leaf = self.get_leaf_object()
         if leaf.__class__ != self.__class__:
-            return "%s: %s" % (leaf._meta.verbose_name, unicode(leaf))
+            return "%s: %s" % (leaf._meta.verbose_name, force_text(leaf))
         # Simulate what Django does in Model.__str__, so that when no
-        # __unicode__ method is defined on the model, this mixin doesn't
+        # __str__ method is defined on the model, this mixin doesn't
         # affect the unicode representation
-        if hasattr(super(Inheritable, self), '__unicode__'):
-            return super(Inheritable, self).__unicode__()
+        if hasattr(super(Inheritable, self), '__str__'):
+            return super(Inheritable, self).__str__()
         return '%s object' % self.__class__.__name__
 
 

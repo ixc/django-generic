@@ -3,10 +3,17 @@ import re
 from django import forms
 from django import template
 from django.conf import settings
-from django.contrib.sites.models import get_current_site
 from django.core.exceptions import ImproperlyConfigured
-from django.core.urlresolvers import reverse
-from django.db.models import get_model
+from django.urls import reverse
+from django.utils.encoding import force_text
+
+try:
+    from django.apps import apps
+    get_model = apps.get_model
+    get_models = apps.get_models
+except ImportError:
+    from django.db.models.loading import get_model, get_models
+
 from django.http import QueryDict
 try:
     from django.shortcuts import resolve_url
@@ -14,10 +21,10 @@ except ImportError:
     from generic.utils.future import resolve_url
 from django.template import Node
 from django.template import TemplateSyntaxError
-from django.template.defaultfilters import stringfilter, fix_ampersands
+from django.template.defaultfilters import stringfilter
+from django.utils.encoding import force_text
 from django.utils.html import strip_tags
 from django.utils.safestring import mark_safe
-from urlparse import urlparse
 
 register = template.Library()
 
@@ -48,35 +55,45 @@ def unbreakable(string):
     return mark_safe(
         string.strip().replace(' ', '&nbsp;').replace('-', '&#8209;'))
 
+
+# from http://hg.python.org/cpython/file/2.7/Lib/HTMLParser.py#l447
+# (the 2.5 version is *far* inferior)
+entitydefs = None
+def htmlparser_unescape(s):
+    if '&' not in s:
+        return s
+    def replaceEntities(s):
+        s = s.groups()[0]
+        try:
+            if s[0] == "#":
+                s = s[1:]
+                if s[0] in ['x','X']:
+                    c = int(s[1:], 16)
+                else:
+                    c = int(s)
+                return unichr(c)
+        except ValueError:
+            return '&#'+s+';'
+        else:
+            import htmlentitydefs
+            entitydefs = {'apos':u"'"}
+            for k, v in htmlentitydefs.name2codepoint.iteritems():
+                entitydefs[k] = unichr(v)
+            try:
+                return entitydefs[s]
+            except KeyError:
+                return '&'+s+';'
+
+    return re.sub(r"&(#?[xX]?(?:[0-9a-fA-F]+|\w{1,8}));", replaceEntities, s)
+
+
 HTML_COMMENTS = re.compile(r'<!--.*?-->', re.DOTALL)
+
 @register.filter
 @stringfilter
-def unescape(text, include_angle_brackets=True):
-    """
-    Renders plain versions of HTML text - useful for supplying HTML into
-    plain text contexts.
-    """
-    ENTITIES = {
-        'amp': '&',
-        'quot': '"',
-        '#39': "'",
-        'nbsp': ' ',
-        'ndash': '-',
-        'mdash': '--',
-        'rsquo': "'",
-        'rdquo': '"',
-        'lsquo': "'",
-        'ldquo': '"',
-        'middot': '*',
-        'hellip': '...',
-    }
-    if include_angle_brackets:
-        ENTITIES['lt'] = '<'
-        ENTITIES['gt'] = '>'
+def unescape(text):
     text = HTML_COMMENTS.sub('', text)
-    return re.sub(
-        '&(%s);' % '|'.join(ENTITIES),
-        lambda match: ENTITIES[match.group(1)], text)
+    return htmlparser_unescape(text)
 
 
 LINE_BREAKS = re.compile(r'(<br\s*/*>)|(</p>)')
@@ -91,7 +108,12 @@ def html_to_text(html):
 @register.filter
 @stringfilter
 def unescape_except_angle_brackets(text):
-    return unescape(text, include_angle_brackets=False)
+    text = text.replace('&gt;', 'AMPERSAND_GREATER_THAN_SEMICOLON')
+    text = text.replace('&lt;', 'AMPERSAND_LESS_THAN_SEMICOLON')
+    text = unescape(text)
+    text = text.replace('AMPERSAND_LESS_THAN_SEMICOLON', '&lt;')
+    text = text.replace('AMPERSAND_GREATER_THAN_SEMICOLON', '&gt;')
+    return text
 
 
 def _get_admin_url(obj, view='change', admin_site_name='admin'):
@@ -111,6 +133,10 @@ def domain_only(full_url):
     """
     Return only the domain in a url.
     """
+    try:
+        from urllib.parse import urlparse
+    except ImportError:
+        from urlparse import urlparse
     parsed = urlparse(full_url)
     return parsed.netloc.lstrip("www.")
 
@@ -137,9 +163,9 @@ def split_list(parser, token):
     """Parse template tag: {% split_list list as new_list 2 %}"""
     bits = token.contents.split()
     if len(bits) != 5:
-        raise TemplateSyntaxError, "split_list list as new_list 2"
+        raise TemplateSyntaxError("split_list list as new_list 2")
     if bits[2] != 'as':
-        raise TemplateSyntaxError, "second argument to the split_list tag must be 'as'"
+        raise TemplateSyntaxError("second argument to the split_list tag must be 'as'")
     return SplitListNode(bits[1], bits[4], bits[3])
 
 class SplitListNode(Node):
@@ -222,10 +248,10 @@ def do_update_GET(parser, token):
         args = token.split_contents()[1:]
         triples = list(_chunks(args, 3))
         if triples and len(triples[-1]) != 3:
-            raise template.TemplateSyntaxError, "%r tag requires arguments in groups of three (op, attr, value)." % token.contents.split()[0]
+            raise template.TemplateSyntaxError("%r tag requires arguments in groups of three (op, attr, value)." % token.contents.split()[0])
         ops = set([t[1] for t in triples])
         if not ops <= set(['+=', '-=', '=']):
-            raise template.TemplateSyntaxError, "The only allowed operators are '+=', '-=' and '='. You have used %s" % ", ".join(ops)
+            raise template.TemplateSyntaxError("The only allowed operators are '+=', '-=' and '='. You have used %s" % ", ".join(ops))
 
     except ValueError:
         return UpdateGetNode()
@@ -237,6 +263,13 @@ def _chunks(l, n):
     """
     for i in xrange(0, len(l), n):
         yield l[i:i+n]
+
+
+# removed in Django 1.8
+unencoded_ampersands_re = re.compile(r'&(?!(\w+|#\d+);)')
+def fix_ampersands(value):
+    """Returns given HTML with all unencoded ampersands encoded correctly."""
+    return unencoded_ampersands_re.sub('&amp;', force_text(value))
 
 
 class UpdateGetNode(template.Node):
@@ -268,7 +301,7 @@ class UpdateGetNode(template.Node):
                     elif hasattr(actual_val, '__iter__'):
                         GET.setlist(actual_attr, actual_val)
                     else:
-                        GET[actual_attr] = unicode(actual_val)
+                        GET[actual_attr] = force_text(actual_val)
                 elif op == "+=":
                     if actual_val is None or actual_val == []:
                         if GET.has_key(actual_attr):
@@ -276,7 +309,7 @@ class UpdateGetNode(template.Node):
                     elif hasattr(actual_val, '__iter__'):
                         GET.setlist(actual_attr, GET.getlist(actual_attr) + list(actual_val))
                     else:
-                        GET.appendlist(actual_attr, unicode(actual_val))
+                        GET.appendlist(actual_attr, force_text(actual_val))
                 elif op == "-=":
                     li = GET.getlist(actual_attr)
                     if hasattr(actual_val, '__iter__'):
@@ -285,7 +318,7 @@ class UpdateGetNode(template.Node):
                                 li.remove(v)
                         GET.setlist(actual_attr, li)
                     else:
-                        actual_val = unicode(actual_val)
+                        actual_val = force_text(actual_val)
                         if actual_val in li:
                             li.remove(actual_val)
                         GET.setlist(actual_attr, li)
@@ -395,8 +428,8 @@ def _admin_link(tag_name, link_type, context, **kwargs):
     # TODO: i18n
     link_text = kwargs.pop('link_text').replace(
         '<verbose_name>',
-        unicode(model._meta.verbose_name)
-    ).replace('<instance_unicode>', unicode(instance))
+        force_text(model._meta.verbose_name)
+    ).replace('<instance_unicode>', force_text(instance))
 
     querystring_dict = QueryDict('', mutable=True)
     if return_url:
@@ -466,13 +499,13 @@ def change_link(context, obj, **kwargs):
     return _admin_link('change_link', 'change', context, **defaults)
 
 
-@register.assignment_tag(takes_context=True)
+@register.simple_tag(takes_context=True)
 def get_add_link(context, model_string, **kwargs):
     """ {% get_add_link 'myapp.Model' as add_link %} {% if add_link %} ...  """
     return add_link(context, model_string, **kwargs)
 
 
-@register.assignment_tag(takes_context=True)
+@register.simple_tag(takes_context=True)
 def get_change_link(context, obj, **kwargs):
     """ {% get_change_link obj as change_link %} {% if change_link %} ...  """
     return change_link(context, obj, **kwargs)
@@ -487,6 +520,11 @@ def js_static_urls(*args):
 def absolute_url(context, resolvable, scheme='http', domain=None):
     if not domain:
         if 'request' in context:
+            try:
+                from django.contrib.sites.models import get_current_site
+            except ImportError:
+                # Django 1.9
+                from django.contrib.sites.shortcuts import get_current_site
             domain = get_current_site(context['request']).domain
         elif hasattr(settings, 'SITE_DOMAIN'):
             domain = settings.SITE_DOMAIN

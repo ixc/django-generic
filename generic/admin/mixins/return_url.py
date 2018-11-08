@@ -13,8 +13,10 @@ class ReturnURLAdminMixin(admin.ModelAdmin):
     def response_change(self, request, obj):
         referrer = request.GET.get('_return_url')
         if (referrer and
-            not '_continue' in request.REQUEST and
-            not '_popup' in request.REQUEST
+            not '_continue' in request.GET and
+            not '_popup' in request.GET and
+            not '_continue' in request.POST and
+            not '_popup' in request.POST
         ):
             return http.HttpResponseRedirect(referrer)
         else:

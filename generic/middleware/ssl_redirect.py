@@ -2,7 +2,7 @@
 
 from django import http
 from django.conf import settings
-from django.core.urlresolvers import get_callable
+from django.urls import get_callable
 
 def default_test(request, view_func, view_args, view_kwargs):
     """
@@ -40,7 +40,7 @@ class SSLRedirect:
             request.get_full_path()
         )
         if settings.DEBUG and request.method == 'POST':
-            raise RuntimeError, (
+            raise RuntimeError(
                 "Django can't perform a SSL redirect while maintaining POST "
                 "data. Please structure your views so that redirects only "
                 "occur during GETs."

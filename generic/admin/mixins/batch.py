@@ -1,15 +1,13 @@
 from django import forms
 from django import http
-try:
-    from django.conf.urls import patterns, url
-except ImportError:
-    from django.conf.urls.defaults import patterns, url
+from django.conf.urls import url
 from django.contrib import admin
 from django.contrib.admin import helpers
 from django.core.exceptions import ValidationError
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db import models
 from django.template.response import TemplateResponse
+from django.utils.encoding import force_text
 from django.utils.translation import ungettext_lazy, ugettext_lazy as _
 from copy import copy
 
@@ -155,7 +153,7 @@ class BatchUpdateAdmin(admin.ModelAdmin):
             )
         )
         ids = request.REQUEST.get('ids', '').split(',')
-        queryset = self.queryset(request).filter(pk__in=ids)
+        queryset = self.get_queryset(request).filter(pk__in=ids)
         form_class = self.get_batch_update_form_class(request)
         form = form_class(request.POST or None)
         if form.is_valid():
@@ -172,7 +170,9 @@ class BatchUpdateAdmin(admin.ModelAdmin):
                 ) % {
                     'field_list': u', '.join(
                         [
-                            unicode(self.model._meta.get_field(name).verbose_name)
+                            force_text(
+                                self.model._meta.get_field(name).verbose_name
+                            )
                             for name in form.fields_to_update
                         ]
                     ),
@@ -202,14 +202,13 @@ class BatchUpdateAdmin(admin.ModelAdmin):
         )
 
     def get_urls(self):
-        return patterns(
-            '',
+        return [
             url(r'^batch-update/$',
                 self.admin_site.admin_view(self.batch_update_view),
                 name=self._get_url_name(
                     'batchupdate', include_namespace=False),
             ),
-        ) + super(BatchUpdateAdmin, self).get_urls()
+        ] + super(BatchUpdateAdmin, self).get_urls()
 
     def get_actions(self, request):
         actions = super(BatchUpdateAdmin, self).get_actions(request)

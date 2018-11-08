@@ -18,7 +18,10 @@
                 var field_name = $(field).attr('name');
                 var ids = escape($(field).val());
                 if (ids){
-                    var url_base = window.cooked_id_url_base || './';
+                    var url_base = window.cooked_id_url_base || (
+                        location.pathname.endsWith('/add/') ?
+                            './' : '../'
+                    );
                     var cook_url = "";
                     if (is_inline_field) {
                         var model_name = $(field).attr('data-model');

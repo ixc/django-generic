@@ -1,3 +1,5 @@
+import django
+
 from django import http
 from django.conf import settings
 from django.contrib import admin
@@ -5,6 +7,9 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MEDIA_TYPES
 from django.core.urlresolvers import reverse
+from django.urls import reverse
+from django.utils.encoding import force_text
+
 from ..widgets import (
     ForeignKeyCookedIdWidget,
     ManyToManyCookedIdWidget,
@@ -14,10 +19,7 @@ from ..widgets import (
     StackedInlineManyToManyCookedIdWidget,
 )
 
-try:
-    from django.conf.urls import patterns, url
-except ImportError:
-    from django.conf.urls.defaults import patterns, url
+from django.conf.urls import url
 
 try:
     import json
@@ -47,10 +49,10 @@ class BaseCookedIdAdmin:
 
         if hasattr(obj, 'get_absolute_url'):
             view_url = obj.get_absolute_url();
-        if request.user.has_perm('%s.change_%s' %(obj._meta.app_label, obj._meta.module_name)):
-			edit_url = reverse('admin:%s_%s_change' %(obj._meta.app_label,  obj._meta.module_name),  args=[obj.id])
+        if request.user.has_perm('%s.change_%s' %(obj._meta.app_label, obj._meta.model_name)):
+            edit_url = reverse('admin:%s_%s_change' %(obj._meta.app_label,  obj._meta.model_name),  args=[obj.id])
 
-        result = {'text': unicode(obj),
+        result = {'text': force_text(obj),
                   'view_url': view_url,
                   'edit_url': edit_url
                   }
@@ -74,13 +76,19 @@ class BaseCookedIdAdmin:
                 target_model_admin and
                 target_model_admin.has_change_permission(request)
         ):
-            for obj in target_model_admin.queryset(request).filter(id__in=ids):
+            for obj in target_model_admin.get_queryset(request).filter(id__in=ids):
                 response_data[obj.pk] = self.cook(
                     obj, request=request, field_name=field_name)
         else:
             pass # graceful-ish.
+
+        content_type_kwarg = (
+            'content_type' if django.VERSION >= (1,7) else 'mimetype'
+        )
         return http.HttpResponse(
-            json.dumps(response_data), mimetype='application/json')
+            json.dumps(response_data),
+            **{content_type_kwarg: 'application/json'}
+        )
 
     def assert_cooked_target_admin(self, db_field):
         if db_field.rel.to in self.admin_site._registry:
@@ -115,11 +123,11 @@ class CookedIdAdmin(BaseCookedIdAdmin, admin.ModelAdmin):
 
     def get_urls(self):
 
-        urlpatterns = patterns(
-            '',
+        urlpatterns = [
             url(r'^(?P<pk>.+)/cook-ids/(?P<field_name>\w+)/(?P<raw_ids>[\d,]+)/$',
-                self.admin_site.admin_view(self.cook_ids))
-        )
+                self.admin_site.admin_view(self.cook_ids)
+            )
+        ]
 
         # add any inline cooked ID urls...
 
@@ -127,11 +135,11 @@ class CookedIdAdmin(BaseCookedIdAdmin, admin.ModelAdmin):
             try:
                 if inline.cooked_id_fields:
                     content_type = ContentType.objects.get_for_model(inline.model)
-                    urlpatterns += patterns(
-                        '',
+                    urlpatterns += [
                         url(r'^cook-ids-inline/(?P<model_name>'+content_type.model+')/(?P<field_name>\w+)/(?P<raw_ids>[\d,]+)/$',
-                            self.admin_site.admin_view(self.cook_ids_inline))
-                    )
+                            self.admin_site.admin_view(self.cook_ids_inline)
+                        )
+                    ]
             except AttributeError:
                 # probably not a TabularInlineCookedIdAdmin
                 pass
