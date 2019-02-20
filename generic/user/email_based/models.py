@@ -6,9 +6,12 @@ from django.utils.translation import ugettext_lazy as _
 
 class UserQuerySet(models.query.QuerySet):
     def _filter_or_exclude(self, *args, **kwargs):
-        """ Make email lookups case-insensitive """
+        """
+        Force email to lowercase. We assume it is stored in lowercase because
+        case insensitive lookups (via `iexact`) are crazy slow.
+        """
         if 'email' in kwargs:
-            kwargs['email__iexact'] = kwargs.pop('email')
+            kwargs['email'] = kwargs.pop('email').lower()
         return super(UserQuerySet, self)._filter_or_exclude(*args, **kwargs)
 
     def active(self):
@@ -67,3 +70,9 @@ class EmailBasedUser(AbstractBaseUser, PermissionsMixin):
 
     def get_short_name(self):
         return self.first_name
+
+    def save(self, *args, **kwargs):
+        # Force to lowercase for faster case insensitive lookups.
+        if self.email:
+            self.email = self.email.lower()
+        super(EmailBasedUser, self).save(*args, **kwargs)
