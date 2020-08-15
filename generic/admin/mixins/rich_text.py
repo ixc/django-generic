@@ -8,7 +8,7 @@ def make_rich(base):
         rich_fields = ()
 
         class Media(BaseMedia):
-            js = tuple(getattr(BaseMedia, 'js', ())) + list(filter(
+            js = tuple(getattr(BaseMedia, 'js', ())) + tuple(filter(
                 bool, (
                     getattr(settings, 'TINYMCE_JS_URL', None),
                     getattr(settings, 'TINYMCE_JS_INIT_URL', None),
