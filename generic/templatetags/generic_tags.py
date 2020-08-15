@@ -30,7 +30,7 @@ from django.template.defaultfilters import stringfilter
 from django.utils.encoding import force_text
 from django.utils.html import strip_tags
 from django.utils.safestring import mark_safe
-from urlparse import urlparse
+from urllib.parse import urlparse
 
 register = template.Library()
 
@@ -77,14 +77,14 @@ def htmlparser_unescape(s):
                     c = int(s[1:], 16)
                 else:
                     c = int(s)
-                return unichr(c)
+                return chr(c)
         except ValueError:
             return '&#'+s+';'
         else:
-            import htmlentitydefs
-            entitydefs = {'apos':u"'"}
-            for k, v in htmlentitydefs.name2codepoint.iteritems():
-                entitydefs[k] = unichr(v)
+            import html.entities
+            entitydefs = {'apos':"'"}
+            for k, v in html.entities.name2codepoint.items():
+                entitydefs[k] = chr(v)
             try:
                 return entitydefs[s]
             except KeyError:
@@ -165,9 +165,9 @@ def split_list(parser, token):
     """Parse template tag: {% split_list list as new_list 2 %}"""
     bits = token.contents.split()
     if len(bits) != 5:
-        raise TemplateSyntaxError, "split_list list as new_list 2"
+        raise TemplateSyntaxError("split_list list as new_list 2")
     if bits[2] != 'as':
-        raise TemplateSyntaxError, "second argument to the split_list tag must be 'as'"
+        raise TemplateSyntaxError("second argument to the split_list tag must be 'as'")
     return SplitListNode(bits[1], bits[4], bits[3])
 
 class SplitListNode(Node):
@@ -176,7 +176,7 @@ class SplitListNode(Node):
 
     def split_seq(self, list, cols=2):
         start = 0
-        for i in xrange(cols):
+        for i in range(cols):
             stop = start + len(list[i::cols])
             yield list[start:stop]
             start = stop
@@ -250,10 +250,10 @@ def do_update_GET(parser, token):
         args = token.split_contents()[1:]
         triples = list(_chunks(args, 3))
         if triples and len(triples[-1]) != 3:
-            raise template.TemplateSyntaxError, "%r tag requires arguments in groups of three (op, attr, value)." % token.contents.split()[0]
+            raise template.TemplateSyntaxError("%r tag requires arguments in groups of three (op, attr, value)." % token.contents.split()[0])
         ops = set([t[1] for t in triples])
         if not ops <= set(['+=', '-=', '=']):
-            raise template.TemplateSyntaxError, "The only allowed operators are '+=', '-=' and '='. You have used %s" % ", ".join(ops)
+            raise template.TemplateSyntaxError("The only allowed operators are '+=', '-=' and '='. You have used %s" % ", ".join(ops))
 
     except ValueError:
         return UpdateGetNode()
@@ -263,7 +263,7 @@ def do_update_GET(parser, token):
 def _chunks(l, n):
     """ Yield successive n-sized chunks from l.
     """
-    for i in xrange(0, len(l), n):
+    for i in range(0, len(l), n):
         yield l[i:i+n]
 
 
@@ -298,20 +298,20 @@ class UpdateGetNode(template.Node):
             if actual_attr:
                 if op == "=":
                     if actual_val is None or actual_val == []:
-                        if GET.has_key(actual_attr):
+                        if actual_attr in GET:
                             del GET[actual_attr]
                     elif hasattr(actual_val, '__iter__'):
                         GET.setlist(actual_attr, actual_val)
                     else:
-                        GET[actual_attr] = unicode(actual_val)
+                        GET[actual_attr] = str(actual_val)
                 elif op == "+=":
                     if actual_val is None or actual_val == []:
-                        if GET.has_key(actual_attr):
+                        if actual_attr in GET:
                             del GET[actual_attr]
                     elif hasattr(actual_val, '__iter__'):
                         GET.setlist(actual_attr, GET.getlist(actual_attr) + list(actual_val))
                     else:
-                        GET.appendlist(actual_attr, unicode(actual_val))
+                        GET.appendlist(actual_attr, str(actual_val))
                 elif op == "-=":
                     li = GET.getlist(actual_attr)
                     if hasattr(actual_val, '__iter__'):
@@ -320,7 +320,7 @@ class UpdateGetNode(template.Node):
                                 li.remove(v)
                         GET.setlist(actual_attr, li)
                     else:
-                        actual_val = unicode(actual_val)
+                        actual_val = str(actual_val)
                         if actual_val in li:
                             li.remove(actual_val)
                         GET.setlist(actual_attr, li)
@@ -430,8 +430,8 @@ def _admin_link(tag_name, link_type, context, **kwargs):
     # TODO: i18n
     link_text = kwargs.pop('link_text').replace(
         '<verbose_name>',
-        unicode(model._meta.verbose_name)
-    ).replace('<instance_unicode>', unicode(instance))
+        str(model._meta.verbose_name)
+    ).replace('<instance_unicode>', str(instance))
 
     querystring_dict = QueryDict('', mutable=True)
     if return_url:

@@ -62,7 +62,7 @@ class FallbackEmailMessage(EmailMessage):
 
     def get_fallback_addresses(self):
         if self.fallback_addresses is None:
-            return dict(settings.ADMINS).values()
+            return list(dict(settings.ADMINS).values())
         else:
             return self.fallback_addresses
 
@@ -73,8 +73,8 @@ class FallbackEmailMessage(EmailMessage):
                 logger.error(
                     'No fallback recipients for message: %s' % self.subject)
             self.to = self.fallback_addresses
-            self.subject = u''.join([self.fallback_prefix, self.subject])
-            self.body = u'\n'.join([self.fallback_body_prefix, self.body])
+            self.subject = ''.join([self.fallback_prefix, self.subject])
+            self.body = '\n'.join([self.fallback_body_prefix, self.body])
         return super(FallbackEmailMessage, self).send(fail_silently)
 
 

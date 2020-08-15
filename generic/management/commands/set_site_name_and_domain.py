@@ -24,4 +24,4 @@ class Command(BaseCommand):
 
         if options.get('verbosity', 1) >= 1:
             self.stdout.write(
-                u'Site details set:\n   %s / %s\n' % (site.name, site.domain))
+                'Site details set:\n   %s / %s\n' % (site.name, site.domain))

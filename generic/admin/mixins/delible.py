@@ -29,7 +29,7 @@ class DelibleAdmin(admin.ModelAdmin):
             except AttributeError:
                 self.message_user(request, 'Error; cannot undelete.')
             else:
-                self.message_user(request, u"%s undeleted!" % obj)
+                self.message_user(request, "%s undeleted!" % obj)
             return redirect(
                 'admin:%s_%s_change' % (
                     obj._meta.app_label, obj._meta.model_name), obj.pk)

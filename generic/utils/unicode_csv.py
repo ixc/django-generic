@@ -1,7 +1,7 @@
 # from http://docs.python.org/library/csv.html#csv-examples
 
 import csv
-import cStringIO
+import io
 import codecs
 
 class UTF8Recoder:
@@ -14,7 +14,7 @@ class UTF8Recoder:
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         return self.reader.next().encode("utf-8")
 
 class Reader:
@@ -27,9 +27,9 @@ class Reader:
         f = UTF8Recoder(f, encoding)
         self.reader = csv.reader(f, dialect=dialect, **kwds)
 
-    def next(self):
-        row = self.reader.next()
-        return [unicode(s, "utf-8") for s in row]
+    def __next__(self):
+        row = next(self.reader)
+        return [str(s, "utf-8") for s in row]
 
     def __iter__(self):
         return self
@@ -42,25 +42,25 @@ class Writer:
 
     def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
         # Redirect output to a queue
-        self.queue = cStringIO.StringIO()
+        self.queue = io.StringIO()
         self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
         self.stream = f
         self.encoder = codecs.getincrementalencoder(encoding)()
 
     def writerow(self, row):
         def stringify(value):
-            if isinstance(value, unicode):
+            if isinstance(value, str):
                 pass
-            elif isinstance(value, basestring):
+            elif isinstance(value, str):
                 value = value.decode('utf-8')
             elif hasattr(value, '__unicode__'):
-                value = unicode(value)
+                value = str(value)
             elif hasattr(value, '__str__'):
                 value = str(value).decode('utf-8')
             else:
                 raise NotImplementedError
             return value.encode('utf-8')
-        self.writer.writerow(map(stringify, row))
+        self.writer.writerow(list(map(stringify, row)))
         # Fetch UTF-8 output from the queue ...
         data = self.queue.getvalue()
         data = data.decode("utf-8")

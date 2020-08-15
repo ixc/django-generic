@@ -1,4 +1,5 @@
 from django.core import urlresolvers
+import collections
 
 def resolve_url(to, *args, **kwargs):
     """
@@ -23,7 +24,7 @@ def resolve_url(to, *args, **kwargs):
         return urlresolvers.reverse(to, args=args, kwargs=kwargs)
     except urlresolvers.NoReverseMatch:
         # If this is a callable, re-raise.
-        if callable(to):
+        if isinstance(to, collections.Callable):
             raise
         # If this doesn't "feel" like a URL, re-raise.
         if '/' not in to and '.' not in to:

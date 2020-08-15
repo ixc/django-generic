@@ -1,7 +1,8 @@
 from operator import add
+from functools import reduce
 
 def _get_subclasses(klass):
-    return (klass,) + reduce(add, map(_get_subclasses, klass.__subclasses__()), ())
+    return (klass,) + reduce(add, list(map(_get_subclasses, klass.__subclasses__())), ())
 
 def get_subclasses(model, include_abstract=False):
     """

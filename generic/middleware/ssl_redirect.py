@@ -40,11 +40,10 @@ class SSLRedirect:
             request.get_full_path()
         )
         if settings.DEBUG and request.method == 'POST':
-            raise RuntimeError, (
+            raise RuntimeError(
                 "Django can't perform a SSL redirect while maintaining POST "
                 "data. Please structure your views so that redirects only "
-                "occur during GETs."
-            )
+                "occur during GETs.")
         if getattr(settings, 'SSL_REDIRECTS_PERMANENT', True):
             return http.HttpResponsePermanentRedirect(newurl)
         else:

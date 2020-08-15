@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.template import defaultfilters
 from django.utils.translation import ugettext_lazy as _
 from ...utils import unicode_csv
+import collections
 
 class CSVExportAdmin(admin.ModelAdmin):
     def _get_url_name(self, view_name, include_namespace=True):
@@ -25,7 +26,7 @@ class CSVExportAdmin(admin.ModelAdmin):
         for obj in queryset:
             row = []
             for title, key in fields:
-                if callable(key):
+                if isinstance(key, collections.Callable):
                     row.append(key(obj))
                 else:
                     row.append(getattr(obj, key))

@@ -53,7 +53,7 @@ class BaseCookedIdAdmin:
         if request.user.has_perm('%s.change_%s' % (obj._meta.app_label, obj._meta.module_name)):
             edit_url = reverse('admin:%s_%s_change' % (obj._meta.app_label,  obj._meta.module_name),  args=[obj.id])
 
-        result = {'text': unicode(obj),
+        result = {'text': str(obj),
                   'view_url': view_url,
                   'edit_url': edit_url
                   }
@@ -64,7 +64,7 @@ class BaseCookedIdAdmin:
         if not field_name in self.cooked_id_fields:
             raise http.Http404
         try:
-            ids = map(int, raw_ids.split(','))
+            ids = list(map(int, raw_ids.split(',')))
         except ValueError:
             if raw_ids == '':
                 ids = []

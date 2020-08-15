@@ -3,7 +3,7 @@ import os
 import re
 import hotshot, hotshot.stats
 import tempfile
-import StringIO
+import io
 
 from django.conf import settings
 
@@ -18,9 +18,9 @@ class ConsoleExceptionMiddleware:
         if settings.DEBUG:
             import traceback
             exc_info = sys.exc_info()
-            print "######################## Exception #############################"
-            print '\n'.join(traceback.format_exception(*(exc_info or sys.exc_info())))
-            print "################################################################"
+            print("######################## Exception #############################")
+            print('\n'.join(traceback.format_exception(*(exc_info or sys.exc_info()))))
+            print("################################################################")
         return None
 
 class ProfileMiddleware(object):
@@ -60,7 +60,7 @@ class ProfileMiddleware(object):
                 return name[0]
 
     def get_summary(self, results_dict, sum):
-        list = [ (item[1], item[0]) for item in results_dict.items() ]
+        list = [ (item[1], item[0]) for item in list(results_dict.items()) ]
         list.sort( reverse = True )
         list = list[:40]
 
@@ -103,7 +103,7 @@ class ProfileMiddleware(object):
         if (settings.DEBUG or request.user.is_superuser) and 'prof' in request.GET:
             self.prof.close()
 
-            out = StringIO.StringIO()
+            out = io.StringIO()
             old_stdout = sys.stdout
             sys.stdout = out
 

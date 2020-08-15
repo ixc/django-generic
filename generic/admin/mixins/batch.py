@@ -22,7 +22,7 @@ class BatchUpdateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         from django.forms.forms import BoundField
         super(BatchUpdateForm, self).__init__(*args, **kwargs)
-        for field_name in self.fields.keys():
+        for field_name in list(self.fields.keys()):
 
             model_field = self._meta.model._meta.get_field(field_name)
             if isinstance(model_field, models.ManyToManyField):
@@ -54,7 +54,7 @@ class BatchUpdateForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super(BatchUpdateForm, self).clean()
         self.fields_to_update = []
-        for field_name, field in self.fields.iteritems():
+        for field_name, field in self.fields.items():
             if field.update_checkbox.value():
                 self.fields_to_update.append(field_name)
         if not self.fields_to_update:
@@ -143,17 +143,15 @@ class BatchUpdateAdmin(admin.ModelAdmin):
         )
 
     def batch_update_view(self, request):
-        template_paths = map(
-            lambda path: path % {
+        template_paths = [path % {
                 'app_label': self.model._meta.app_label,
                 'model_name': self.model._meta.model_name,
-            }, (
+            } for path in (
                 'admin/%(app_label)s/%(model_name)s/batch_update.html',
                 'admin/%(app_label)s/batch_update.html',
                 'admin/batch_update.html',
                 'admin/generic/batch_update.html',
-            )
-        )
+            )]
         ids = request.REQUEST.get('ids', '').split(',')
         queryset = self.get_queryset(request).filter(pk__in=ids)
         form_class = self.get_batch_update_form_class(request)
@@ -164,15 +162,15 @@ class BatchUpdateAdmin(admin.ModelAdmin):
             self.message_user(
                 request,
                 ungettext_lazy(
-                    u'Updated fields (%(field_list)s) '
-                    u'for %(count)d %(verbose_name)s',
-                    u'Updated fields (%(field_list)s) '
-                    u'for %(count)d %(verbose_name_plural)s',
+                    'Updated fields (%(field_list)s) '
+                    'for %(count)d %(verbose_name)s',
+                    'Updated fields (%(field_list)s) '
+                    'for %(count)d %(verbose_name_plural)s',
                     updated,
                 ) % {
-                    'field_list': u', '.join(
+                    'field_list': ', '.join(
                         [
-                            unicode(self.model._meta.get_field(name).verbose_name)
+                            str(self.model._meta.get_field(name).verbose_name)
                             for name in form.fields_to_update
                         ]
                     ),

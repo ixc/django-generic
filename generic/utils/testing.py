@@ -1,8 +1,9 @@
-from __future__ import absolute_import
+
 
 import hashlib
 import logging
 import re
+import collections
 
 try:
     from django.contrib.auth import get_user_model
@@ -100,11 +101,11 @@ class TestCase(django.test.TestCase):
         try:
             super(TestCase, self).assertRedirects(
                 response, expected_url, *args, **kwargs)
-        except AssertionError, e:
+        except AssertionError as e:
             if ignore_querystring and re.match(
                     r"Response redirected to '(.*){0}\?.*', "
                     r"expected '\1{0}'".format(expected_url),
-                    unicode(e)
+                    str(e)
             ):
                 pass # silence AssertionError; only query string differed
             else:
@@ -169,8 +170,8 @@ class TestCase(django.test.TestCase):
                         case_sensitive=False
                     )
                 if 'context' in attributes:
-                    for key, value in attributes.pop('context').iteritems():
-                        if callable(value):
+                    for key, value in attributes.pop('context').items():
+                        if isinstance(value, collections.Callable):
                             self.assertTrue(value(response.context[key]))
                         else:
                             self.assertEqual(response.context[key], value)
@@ -255,7 +256,7 @@ class TestCase(django.test.TestCase):
         if path_only:
             return zip(*matches)[2]
         else:
-            return map(''.join, matches)
+            return list(map(''.join, matches))
 
     def extract_url_from_email(self, message=None, path_only=True):
         urls = self.extract_urls_from_email(message, path_only)
@@ -272,7 +273,7 @@ class _VerboseAssertNumQueriesContext(_AssertNumQueriesContext):
         try:
             super(_VerboseAssertNumQueriesContext, self).__exit__(
                 exc_type, exc_value, traceback)
-        except AssertionError, e:
+        except AssertionError as e:
             start = getattr(
                 self, 'initial_queries', getattr(self, 'starting_queries', 0)
             )
@@ -281,7 +282,7 @@ class _VerboseAssertNumQueriesContext(_AssertNumQueriesContext):
             logger.warning(
                 '\n    '.join(
                     ['Unexpected queries (%s):' % e] +
-                    map(unicode, queries)
+                    list(map(str, queries))
                 )
             )
             raise
@@ -314,7 +315,7 @@ class SeleniumTests(LiveServerTestCase):
                 )
             )
         if mail.outbox and 'Internal Server Error' in mail.outbox[-1].subject:
-            print mail.outbox[-1].body
+            print(mail.outbox[-1].body)
         super(SeleniumTests, self).tearDown()
 
     def get(self, url, *args, **kwargs):
@@ -344,7 +345,7 @@ class SeleniumTests(LiveServerTestCase):
                     option.click()
                     return
             logger.warning(
-                u"Couldn't find select[name={0}] value ({1})".format(
+                "Couldn't find select[name={0}] value ({1})".format(
                     field_name,
                     value,
                 )
@@ -353,7 +354,7 @@ class SeleniumTests(LiveServerTestCase):
             input.send_keys(value)
 
     def fill_fields(self, data):
-        for field_name, value in data.iteritems():
+        for field_name, value in data.items():
             self.fill_field(field_name, value)
 
     def submit_form(self):
@@ -363,5 +364,5 @@ class SeleniumTests(LiveServerTestCase):
         return self.driver.current_url.replace(self.live_server_url, '', 1)
 
     def print_text(self, container_tag='body'):
-        print self.driver.find_element_by_tag_name(container_tag).text
+        print(self.driver.find_element_by_tag_name(container_tag).text)
 

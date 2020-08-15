@@ -16,7 +16,7 @@ class Inheritable(object):
         # Display the unicode representation of the leaf model instance
         leaf = self.get_leaf_object()
         if leaf.__class__ != self.__class__:
-            return "%s: %s" % (leaf._meta.verbose_name, unicode(leaf))
+            return "%s: %s" % (leaf._meta.verbose_name, str(leaf))
         # Simulate what Django does in Model.__str__, so that when no
         # __unicode__ method is defined on the model, this mixin doesn't
         # affect the unicode representation

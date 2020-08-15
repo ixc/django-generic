@@ -23,19 +23,13 @@ from ...utils.inheritance import get_subclasses
 def get_subclass_choices(parent_model):
     title_if_lower = lambda s: (s.title() if s == s.lower() else s)
     return sorted(
-        map(
-            lambda model: (
+        [(
                 model._meta.model_name,
                 title_if_lower(model._meta.verbose_name),
-            ),
-            filter(
-                lambda model: (
+            ) for model in [model for model in get_models() if (
                     issubclass(model, parent_model) and
                     parent_model in model._meta.parents
-                ),
-                get_models()
-            )
-        )
+                )]]
     )
 
 class SubclassFilter(SimpleListFilter):
@@ -64,13 +58,13 @@ class PolymorphicAdmin(admin.ModelAdmin):
 
     def add_view(self, request, form_url='', extra_context=None):
         if self.subclass_parameter_name in request.POST:
-            import urllib
+            import urllib.request, urllib.parse, urllib.error
             return http.HttpResponseRedirect(
                 '?%s=%s' % (
                     self.subclass_parameter_name,
                     request.POST.get(self.subclass_parameter_name),
                 )
-                + '&' + urllib.urlencode(request.GET.items())
+                + '&' + urllib.parse.urlencode(list(request.GET.items()))
             )
         return super(PolymorphicAdmin, self).add_view(
             request, form_url=form_url, extra_context=extra_context)

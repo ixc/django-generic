@@ -45,7 +45,7 @@ def _http_auth_helper(request):
     if exemption_callable and exemption_callable(request):
         return None
 
-    if request.META.has_key('HTTP_AUTHORIZATION'):
+    if 'HTTP_AUTHORIZATION' in request.META:
         auth = request.META['HTTP_AUTHORIZATION'].split()
         if len(auth) == 2:
             if auth[0].lower() == 'basic':

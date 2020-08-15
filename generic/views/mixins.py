@@ -227,7 +227,7 @@ class InlineFormSetView(View):
 
     def requires_multipart_form(self):
         return (
-            any([formset.is_multipart() for formset in self.formsets.values()])
+            any([formset.is_multipart() for formset in list(self.formsets.values())])
             or super(InlineFormSetView, self).requires_multipart_form()
         )
 
@@ -253,7 +253,7 @@ class InlineFormSetView(View):
         if not form.is_valid():
             return False
         instance = form.save(commit=False)
-        for formset in self.formsets.values():
+        for formset in list(self.formsets.values()):
             formset.instance = instance
             if not formset.is_valid():
                 return False
@@ -262,7 +262,7 @@ class InlineFormSetView(View):
     def save_form(self, form):
         assert(form.is_valid())
         self.object = form.save()
-        for formset in self.formsets.values():
+        for formset in list(self.formsets.values()):
             formset.instance = self.object
             assert(formset.is_valid())
             formset.save()
